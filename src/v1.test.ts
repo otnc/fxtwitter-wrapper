@@ -106,14 +106,25 @@ describe("FxTwitterV1", () => {
       }
     );
 
-    it("rejects an invalid screenName passed alongside a valid ID", async () => {
+    it("rejects an empty screenName, which would break the path shape", async () => {
       const client = mockJson({ code: 200 });
       const v1 = new FxTwitterV1({ fetch: client.fetchImpl });
 
       await expect(
-        v1.getStatus("20", { screenName: "way_too_long_handle" })
+        v1.getStatus("20", { screenName: "  " })
       ).rejects.toBeInstanceOf(FxTwitterError);
       expect(client.calls).toHaveLength(0);
+    });
+
+    it("accepts any non-empty screenName, since the API ignores it", async () => {
+      const client = mockJson({ code: 200, message: "OK", tweet: null });
+      const v1 = new FxTwitterV1({ fetch: client.fetchImpl });
+
+      await v1.getStatus("20", { screenName: "way_too_long_handle" });
+
+      expect(client.calls[0]).toBe(
+        "https://api.fxtwitter.com/way_too_long_handle/status/20"
+      );
     });
 
     it("accepts handles at the 15-character limit", async () => {

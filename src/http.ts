@@ -1,10 +1,13 @@
+import { defu } from "defu";
 import {
   createFetch,
+  FetchError,
   type CreateFetchOptions,
   type FetchOptions,
   type $Fetch,
 } from "ofetch";
 import { FxTwitterError } from "./errors";
+import { defaultUserAgent } from "./user-agent";
 
 export type QueryValue = string | number | boolean | undefined;
 
@@ -33,58 +36,34 @@ export interface RequestOptions {
 
 export const DEFAULT_BASE_URL = "https://api.fxtwitter.com";
 
-// The API varies its response on User-Agent (it serves embed HTML to browsers
-// and crawlers), so identify as a plain API client rather than sending
-// whatever the runtime's default is.
-const DEFAULT_USER_AGENT =
-  "fxtwitter (+https://github.com/otnc/fxtwitter-wrapper)";
-
-/** Narrow shape of the errors ofetch throws, avoiding a hard dependency on its class. */
-interface OFetchLikeError {
-  data?: unknown;
-  status?: number;
-  statusCode?: number;
-  response?: { status?: number };
-  name?: string;
-  message?: string;
-  cause?: unknown;
-}
-
-/** ofetch wraps aborts in a FetchError, so the original name lives on `cause`. */
-function isAbort(error: OFetchLikeError): boolean {
-  const names = new Set(["AbortError", "TimeoutError"]);
-  if (error.name && names.has(error.name)) return true;
-
-  const cause = error.cause;
-  return isRecord(cause) && typeof cause.name === "string"
-    ? names.has(cause.name)
-    : false;
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
 /**
- * Wraps ofetch with the conventions shared by the v1 and v2 clients:
- * `null` for 204 responses, and `FxTwitterError` for everything that fails.
+ * Wraps ofetch with the conventions shared by the clients: `null` for 204
+ * responses, and `FxTwitterError` for everything that fails.
  */
 export class HttpClient {
   private readonly request: $Fetch;
 
   constructor(options: ClientOptions = {}) {
+    const userAgent = defaultUserAgent();
+    const defaultHeaders: Record<string, string> = {};
+    if (userAgent) defaultHeaders["User-Agent"] = userAgent;
+
     // Error responses stay as thrown FetchErrors so ofetch's retry still
     // applies; `toFxTwitterError` unpacks them below.
-    const defaults: FetchOptions = {
-      baseURL: options.baseUrl ?? DEFAULT_BASE_URL,
-      headers: { "User-Agent": DEFAULT_USER_AGENT, ...options.headers },
-    };
-
-    if (options.timeout !== undefined) defaults.timeout = options.timeout;
-    if (options.retry !== undefined) defaults.retry = options.retry;
-    if (options.retryDelay !== undefined) {
-      defaults.retryDelay = options.retryDelay;
-    }
+    const defaults: FetchOptions = defu(
+      {
+        baseURL: options.baseUrl,
+        headers: options.headers,
+        timeout: options.timeout,
+        retry: options.retry,
+        retryDelay: options.retryDelay,
+      },
+      { baseURL: DEFAULT_BASE_URL, headers: defaultHeaders }
+    );
 
     const globalOptions: CreateFetchOptions = { defaults };
     if (options.fetch) globalOptions.fetch = options.fetch;
@@ -96,7 +75,7 @@ export class HttpClient {
   async get<T>(options: RequestOptions): Promise<T | null> {
     // No `responseType` — ofetch picks it from the Content-Type, so a non-JSON
     // response arrives as a string instead of throwing a parse error.
-    let response: { status: number; ok: boolean; _data?: unknown };
+    let response: { status: number; _data?: unknown };
     try {
       response = await this.request.raw(options.path, {
         query: options.query,
@@ -110,7 +89,7 @@ export class HttpClient {
 
     const body: unknown = response._data;
 
-    // The v1 API answers some bad requests with its embed HTML at HTTP 200, or
+    // The API answers some bad requests with its embed HTML at HTTP 200, or
     // redirects to the project's GitHub page — a non-object body here means the
     // request never reached a JSON endpoint.
     if (!isRecord(body)) {
@@ -138,17 +117,31 @@ function nonJsonMessage(body: unknown, status: number): string {
   );
 }
 
+/** ofetch wraps aborts in a FetchError, so the original name lives on `cause`. */
+function isAbort(error: Error): boolean {
+  const names = new Set(["AbortError", "TimeoutError"]);
+  if (names.has(error.name)) return true;
+
+  const cause: unknown = error.cause;
+  return isRecord(cause) && typeof cause.name === "string"
+    ? names.has(cause.name)
+    : false;
+}
+
 function toFxTwitterError(cause: unknown): FxTwitterError {
   if (cause instanceof FxTwitterError) return cause;
-
-  const error = isRecord(cause) ? (cause as OFetchLikeError) : {};
-
-  if (isAbort(error)) {
+  if (!(cause instanceof Error)) {
+    return new FxTwitterError("Network request failed", { cause });
+  }
+  if (isAbort(cause)) {
     return new FxTwitterError("Request aborted or timed out", { cause });
   }
+  if (!(cause instanceof FetchError)) {
+    return new FxTwitterError(cause.message, { cause });
+  }
 
-  const status = error.status ?? error.statusCode ?? error.response?.status;
-  const data = error.data;
+  const status = cause.status ?? cause.response?.status;
+  const data: unknown = cause.data;
 
   // Documented error responses carry `{ code, message }`. The API-wide
   // User-Agent check answers 401 with `{ error }` instead.
@@ -176,9 +169,5 @@ function toFxTwitterError(cause: unknown): FxTwitterError {
     });
   }
 
-  return new FxTwitterError(error.message ?? "Network request failed", {
-    status,
-    body: data,
-    cause,
-  });
+  return new FxTwitterError(cause.message, { status, body: data, cause });
 }

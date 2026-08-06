@@ -6,8 +6,8 @@ export type FxTwitterV1Options = ClientOptions;
 
 export interface GetStatusOptions {
   /**
-   * Included in the URL for readability only — the API ignores it and resolves
-   * the status from `id` alone.
+   * Included in the URL for readability only. The API resolves the status from
+   * `id` alone and never validates this, so a wrong handle still succeeds.
    */
   screenName?: string;
   /**
@@ -58,8 +58,10 @@ export class FxTwitterV1 {
         `Invalid status ID ${JSON.stringify(id)}: expected 2-20 digits`
       );
     }
-    if (options.screenName !== undefined) {
-      assertHandle(options.screenName);
+    // Not checked against HANDLE_PATTERN: the status route ignores the handle,
+    // so only a value that would break the path shape is a problem.
+    if (options.screenName !== undefined && options.screenName.trim() === "") {
+      throw new FxTwitterError("screenName must not be empty");
     }
 
     const segments = [

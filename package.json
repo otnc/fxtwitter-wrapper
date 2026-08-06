@@ -63,6 +63,11 @@
     "ci": "prettier --check . && eslint .",
     "prepublishOnly": "npm run build"
   },
+  "dependencies": {
+    "defu": "^6.1.7",
+    "ofetch": "^1.5.1",
+    "std-env": "^4.2.0"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^22.20.1",
@@ -75,8 +80,5 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.65.0",
     "vitest": "^4.1.10"
-  },
-  "dependencies": {
-    "ofetch": "^1.5.1"
   }
 }

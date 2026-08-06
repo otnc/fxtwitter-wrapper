@@ -111,11 +111,26 @@ describe("HttpClient", () => {
       headers: { "X-Test": "1" },
     });
 
-    await http.get({ path: "/2/status/20" });
+    await http.get({ path: "/status/20" });
 
     const headers = new Headers(client.inits[0]?.headers);
-    expect(headers.get("user-agent")).toContain("fxtwitter");
+    // The API rejects requests without one (HTTP 401).
+    expect(headers.get("user-agent")).toMatch(/^fxtwitter\/\d+\.\d+\.\d+ \(/);
     expect(headers.get("x-test")).toBe("1");
+  });
+
+  it("lets a caller override the default User-Agent", async () => {
+    const client = mockJson({ code: 200 });
+    const http = new HttpClient({
+      fetch: client.fetchImpl,
+      headers: { "User-Agent": "MyBot/1.0 (+https://example.com)" },
+    });
+
+    await http.get({ path: "/status/20" });
+
+    expect(new Headers(client.inits[0]?.headers).get("user-agent")).toBe(
+      "MyBot/1.0 (+https://example.com)"
+    );
   });
 
   it("forwards an AbortSignal", async () => {

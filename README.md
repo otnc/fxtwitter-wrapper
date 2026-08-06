@@ -36,7 +36,11 @@ import { FxTwitterV1, type Tweet } from "fxtwitter/v1";
 
 ### Endpoints
 
-v1 has exactly two endpoints, and both are covered:
+v1 has exactly two endpoints, and both are covered. FxEmbed routes each hostname
+to a single "realm", and the
+[API realm's router](https://github.com/FxEmbed/FxEmbed/blob/main/src/realms/api/router.ts)
+registers only these paths outside the `/2/` (v2) prefix — everything else on
+`api.fxtwitter.com` falls through to a JSON `404`.
 
 | Method | Request |
 | --- | --- |
@@ -47,8 +51,9 @@ v1 has exactly two endpoints, and both are covered:
 | `getUser(handle)` | `GET /:handle` |
 
 `screenName` only makes the URL readable — the API resolves the status from the
-ID alone. `translateTo` takes an ISO 639-1 code (`es`) or a locale (`zh-cn`) and
-adds a `translation` object to the returned status.
+ID alone and never checks it, so a wrong handle still returns the right status.
+`translateTo` takes an ISO 639-1 code (`es`) or a locale (`zh-cn`) and adds a
+`translation` object to the returned status.
 
 ### Options
 
@@ -66,10 +71,15 @@ const fx = new FxTwitterV1({
 await fx.getStatus("20", { signal: AbortSignal.timeout(2000) });
 ```
 
-> **The API requires a `User-Agent` header** and answers `401` without one. This
-> package sends a default identifying itself, but setting your own is
-> recommended — the API's own guidance is to use something that identifies your
-> app, such as `MyAwesomeBot/1.0 (+http://example.com/myawesomebot)`.
+> **The API requires a `User-Agent` header** and answers `401` without one.
+> A default is sent for you, built from the package version and host runtime —
+> `fxtwitter/1.0.0 (+https://github.com/otnc/fxtwitter-wrapper; node)`. Passing
+> your own `User-Agent` header replaces it, which the API's own guidance
+> recommends: something that identifies your app, such as
+> `MyAwesomeBot/1.0 (+http://example.com/myawesomebot)`.
+>
+> In browsers no default is set, because `User-Agent` is a forbidden header
+> there and the browser supplies its own.
 
 ### Errors
 
@@ -100,11 +110,12 @@ answer those cases with JSON:
 
 - A status ID must be 2-20 digits. Anything else makes the API return its embed
   page as **HTML at HTTP 200**.
-- A handle must match `\w{1,15}` (no leading `@`). Anything else is **redirected
-  to the project's GitHub page**.
+- A handle passed to `getUser` must match `\w{1,15}` (no leading `@`). Anything
+  else is **redirected to the project's GitHub page**.
 
 A handle that is well-formed but does not exist is a normal `404` and is
-reported as such.
+reported as such. `getStatus`'s `screenName` is not checked against that
+pattern, since the status route ignores it entirely.
 
 ## Requirements
 
@@ -116,7 +127,13 @@ reported as such.
 - Fully typed responses, derived from live API responses rather than the
   archived wiki, which documents a much older shape.
 - Timeout, retry, and `AbortSignal` support via [ofetch](https://github.com/unjs/ofetch).
+- A descriptive `User-Agent` by default, since the API requires one.
 - ESM + CJS, with a `fxtwitter/v1` subpath export.
+
+Runtime dependencies are [ofetch](https://github.com/unjs/ofetch) (HTTP),
+[defu](https://github.com/unjs/defu) (option defaults) and
+[std-env](https://github.com/unjs/std-env) (runtime detection for the
+`User-Agent`) — all small and tree-shakeable.
 
 ### A note on the v1 response shape
 

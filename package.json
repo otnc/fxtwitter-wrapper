@@ -40,6 +40,14 @@
       "import": "./dist/v1.mjs",
       "require": "./dist/v1.cjs"
     },
+    "./v2": {
+      "types": {
+        "import": "./dist/v2.d.mts",
+        "require": "./dist/v2.d.cts"
+      },
+      "import": "./dist/v2.mjs",
+      "require": "./dist/v2.cjs"
+    },
     "./package.json": "./package.json"
   },
   "files": [

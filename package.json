@@ -1,7 +1,7 @@
 {
   "name": "fxtwitter",
-  "version": "0.0.0",
-  "description": "FxTwitter API wrapper.",
+  "version": "1.0.0",
+  "description": "Typed wrapper for the FxTwitter v1 API.",
   "keywords": [
     "x",
     "twitter",
@@ -31,7 +31,16 @@
       },
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
-    }
+    },
+    "./v1": {
+      "types": {
+        "import": "./dist/v1.d.mts",
+        "require": "./dist/v1.d.cts"
+      },
+      "import": "./dist/v1.mjs",
+      "require": "./dist/v1.cjs"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "dist"
@@ -66,5 +75,8 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.65.0",
     "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "ofetch": "^1.5.1"
   }
 }

@@ -1,7 +1,9 @@
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
-  entry: ["src/index.ts"],
+  // "." plus the "fxtwitter/v1" subpath export, so the import path stays
+  // stable once the v2 client ships alongside it.
+  entry: ["src/index.ts", "src/v1.ts"],
   format: ["esm", "cjs"],
   dts: true,
   clean: true,

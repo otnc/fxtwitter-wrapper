@@ -104,22 +104,7 @@ describe("HttpClient", () => {
     expect(error).toBeInstanceOf(FxTwitterError);
   });
 
-  it("sends a default User-Agent and merges custom headers", async () => {
-    const client = mockJson({ code: 200 });
-    const http = new HttpClient({
-      fetch: client.fetchImpl,
-      headers: { "X-Test": "1" },
-    });
-
-    await http.get({ path: "/status/20" });
-
-    const headers = new Headers(client.inits[0]?.headers);
-    // The API rejects requests without one (HTTP 401).
-    expect(headers.get("user-agent")).toMatch(/^fxtwitter\/\d+\.\d+\.\d+ \(/);
-    expect(headers.get("x-test")).toBe("1");
-  });
-
-  it("lets a caller override the default User-Agent", async () => {
+  it("sends the headers it is given, without inventing any", async () => {
     const client = mockJson({ code: 200 });
     const http = new HttpClient({
       fetch: client.fetchImpl,
@@ -128,9 +113,24 @@ describe("HttpClient", () => {
 
     await http.get({ path: "/status/20" });
 
-    expect(new Headers(client.inits[0]?.headers).get("user-agent")).toBe(
-      "MyBot/1.0 (+https://example.com)"
-    );
+    const headers = new Headers(client.inits[0]?.headers);
+    expect(headers.get("user-agent")).toBe("MyBot/1.0 (+https://example.com)");
+  });
+
+  it("reports the API's User-Agent requirement, which uses an `error` body", async () => {
+    const { fetchImpl } = mockFetch({
+      status: 401,
+      body: { error: "You must identify yourself with a User-Agent header" },
+    });
+    const http = new HttpClient({ fetch: fetchImpl, retry: false });
+
+    const error = await http
+      .get({ path: "/status/20" })
+      .catch((err: unknown) => err);
+
+    expect(error).toBeInstanceOf(FxTwitterError);
+    expect((error as FxTwitterError).status).toBe(401);
+    expect((error as FxTwitterError).message).toContain("User-Agent");
   });
 
   it("forwards an AbortSignal", async () => {

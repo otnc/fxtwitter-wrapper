@@ -1,5 +1,5 @@
-// This release covers the FxTwitter v1 API only. The v2 client lives on the
-// `release/v2` branch and will be published under the `fxtwitter/v2` subpath.
+// Each API version also ships under its own subpath (`fxtwitter/v1`), so those
+// import paths stay stable as further versions are added here.
 
 export { FxTwitterV1 } from "./v1";
 export type {

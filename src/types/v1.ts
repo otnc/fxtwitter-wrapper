@@ -1,15 +1,12 @@
-// Types for the legacy FixTweet/FxTwitter v1 API.
+// Types for the FxTwitter v1 API.
 //
-// v1 has no live documentation — docs.fxtwitter.com now redirects to the v2
-// docs at docs.fxembed.com, and the archived FixTweet wiki
-// (github.com/FixTweet/FixTweet/wiki/Status-Fetch-API) documents a much older
-// response shape than what the API returns today. These types were derived by
-// inspecting live responses from api.fxtwitter.com.
+// There is no live documentation for it: docs.fxtwitter.com redirects to the
+// current docs, and the archived FixTweet wiki describes a much older response
+// than the API returns today. These types were derived by inspecting live
+// responses and cross-checking github.com/FxEmbed/FxEmbed.
 //
-// In practice v1 now returns v2's data model with a handful of legacy names:
-// `retweets` (v2 `reposts`), `twitter_card` (v2 `embed_card`), a string-valued
-// `replying_to` plus `replying_to_status`, and `tweets` (v2 `statuses`) on the
-// user object.
+// The payload largely matches later versions, under a few older names — noted
+// per field below.
 
 export interface Facet {
   /** e.g. `url`, `mention`, `hashtag`, `media`. */

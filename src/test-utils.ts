@@ -3,7 +3,7 @@ import { vi } from "vitest";
 export interface MockResponseInit {
   status?: number;
   body?: unknown;
-  /** Raw body, used to simulate the HTML the v1 API returns for bad requests. */
+  /** Raw body, used to simulate the HTML the API returns for bad requests. */
   text?: string;
   contentType?: string;
 }

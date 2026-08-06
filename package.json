@@ -1,7 +1,7 @@
 {
   "name": "fxtwitter",
   "version": "1.0.0",
-  "description": "Typed wrapper for the FxTwitter v1 API.",
+  "description": "Typed wrapper for the FxTwitter API.",
   "keywords": [
     "x",
     "twitter",
@@ -65,8 +65,7 @@
   },
   "dependencies": {
     "defu": "^6.1.7",
-    "ofetch": "^1.5.1",
-    "std-env": "^4.2.0"
+    "ofetch": "^1.5.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

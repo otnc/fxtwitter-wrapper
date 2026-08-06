@@ -1,18 +1,24 @@
 {
-  "name": "<package-name>",
+  "name": "fxtwitter",
   "version": "0.0.0",
-  "description": "<package-description>",
-  "keywords": [],
-  "homepage": "<package-git>#readme",
+  "description": "FxTwitter API wrapper.",
+  "keywords": [
+    "x",
+    "twitter",
+    "fxtwitter",
+    "wrapper",
+    "api"
+  ],
+  "homepage": "https://github.com/otnc/fxtwitter-wrapper#readme",
   "bugs": {
-    "url": "<package-git>/issues"
+    "url": "https://github.com/otnc/fxtwitter-wrapper/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+<package-git>.git"
+    "url": "git+https://github.com/otnc/fxtwitter-wrapper.git"
   },
-  "license": "<package-license>",
-  "author": "<package-author>",
+  "license": "MIT",
+  "author": "otoneko.",
   "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",

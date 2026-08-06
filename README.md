@@ -1,16 +1,16 @@
-# <package-name>
+# fxtwitter
 
-> <package-description>
+> FxTwitter API wrapper.
 
-[![npm](https://img.shields.io/npm/v/<package-name>)](https://www.npmjs.com/package/<package-name>)
-[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/<package-repo>/ci.yml?branch=main)](<package-git>/actions)
-[![GitHub](https://img.shields.io/github/license/<package-repo>)](<package-git>/blob/main/LICENSE)
-[![Node](https://img.shields.io/node/v/<package-name>)](https://www.npmjs.com/package/<package-name>)
+[![npm](https://img.shields.io/npm/v/fxtwitter)](https://www.npmjs.com/package/fxtwitter)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/otnc/fxtwitter-wrapper/ci.yml?branch=main)](https://github.com/otnc/fxtwitter-wrapper/actions)
+[![GitHub](https://img.shields.io/github/license/otnc/fxtwitter-wrapper)](https://github.com/otnc/fxtwitter-wrapper/blob/main/LICENSE)
+[![Node](https://img.shields.io/node/v/fxtwitter)](https://www.npmjs.com/package/fxtwitter)
 
 ## Install
 
 ```sh
-npm install <package-name>
+npm install fxtwitter
 ```
 
 ## Usage
@@ -18,7 +18,7 @@ npm install <package-name>
 <!-- Replace with a real usage example. -->
 
 ```ts
-import { greet } from '<package-name>'
+import { greet } from 'fxtwitter'
 ```
 
 ## Requirements
@@ -35,4 +35,4 @@ Contributions are welcome! See [CONTRIBUTING.md](./CONTRIBUTING.md) for details.
 
 ## License
 
-Distributed under the [<package-license> License](./LICENSE).
+Distributed under the [MIT License](./LICENSE).

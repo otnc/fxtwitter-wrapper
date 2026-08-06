@@ -1,11 +1,11 @@
 # fxtwitter
 
-> FxTwitter API wrapper.
-
 [![npm](https://img.shields.io/npm/v/fxtwitter)](https://www.npmjs.com/package/fxtwitter)
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/otnc/fxtwitter-wrapper/ci.yml?branch=main)](https://github.com/otnc/fxtwitter-wrapper/actions)
 [![GitHub](https://img.shields.io/github/license/otnc/fxtwitter-wrapper)](https://github.com/otnc/fxtwitter-wrapper/blob/main/LICENSE)
 [![Node](https://img.shields.io/node/v/fxtwitter)](https://www.npmjs.com/package/fxtwitter)
+
+FxTwitter API wrapper.
 
 ## Install
 

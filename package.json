@@ -1,7 +1,7 @@
 {
   "name": "fxtwitter",
-  "version": "0.0.0",
-  "description": "FxTwitter API wrapper.",
+  "version": "1.0.0",
+  "description": "Typed wrapper for the FxTwitter API.",
   "keywords": [
     "x",
     "twitter",
@@ -31,7 +31,16 @@
       },
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
-    }
+    },
+    "./v1": {
+      "types": {
+        "import": "./dist/v1.d.mts",
+        "require": "./dist/v1.d.cts"
+      },
+      "import": "./dist/v1.mjs",
+      "require": "./dist/v1.cjs"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "dist"
@@ -53,6 +62,11 @@
     "check": "prettier --write . && eslint --fix .",
     "ci": "prettier --check . && eslint .",
     "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "defu": "^6.1.7",
+    "ofetch": "^1.5.1",
+    "std-env": "^4.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

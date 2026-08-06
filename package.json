@@ -65,7 +65,8 @@
   },
   "dependencies": {
     "defu": "^6.1.7",
-    "ofetch": "^1.5.1"
+    "ofetch": "^1.5.1",
+    "std-env": "^4.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

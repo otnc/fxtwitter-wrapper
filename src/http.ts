@@ -7,6 +7,7 @@ import {
   type $Fetch,
 } from "ofetch";
 import { FxTwitterError } from "./errors";
+import { environmentUserAgent, hasHeader } from "./user-agent";
 
 export type QueryValue = string | number | boolean | undefined;
 
@@ -19,9 +20,9 @@ export interface ClientOptions {
   /**
    * Extra headers sent with every request.
    *
-   * The API requires a `User-Agent` identifying the caller and answers `401`
-   * without one. Most runtimes set it automatically; set it here on those that
-   * don't, or to identify your app.
+   * When no `User-Agent` is given, one describing the current runtime is
+   * added, because the API answers `401` to requests that do not identify
+   * themselves. Set your own here to override it.
    */
   headers?: Record<string, string>;
   /** Abort a request after this many milliseconds. Disabled by default. */
@@ -53,12 +54,18 @@ export class HttpClient {
   private readonly request: $Fetch;
 
   constructor(options: ClientOptions = {}) {
+    const headers = { ...options.headers };
+    if (!hasHeader(headers, "User-Agent")) {
+      const userAgent = environmentUserAgent();
+      if (userAgent) headers["User-Agent"] = userAgent;
+    }
+
     // Error responses stay as thrown FetchErrors so ofetch's retry still
     // applies; `toFxTwitterError` unpacks them below.
     const defaults: FetchOptions = defu(
       {
         baseURL: options.baseUrl,
-        headers: options.headers,
+        headers,
         timeout: options.timeout,
         retry: options.retry,
         retryDelay: options.retryDelay,

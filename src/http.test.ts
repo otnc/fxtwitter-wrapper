@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { FxTwitterError } from "./errors";
 import { HttpClient } from "./http";
 import { mockFetch, mockJson } from "./test-utils";
+import { environmentUserAgent } from "./user-agent";
 
 describe("HttpClient", () => {
   it("returns the parsed JSON body on success", async () => {
@@ -104,7 +105,23 @@ describe("HttpClient", () => {
     expect(error).toBeInstanceOf(FxTwitterError);
   });
 
-  it("sends the headers it is given, without inventing any", async () => {
+  it("fills in a runtime User-Agent and keeps custom headers", async () => {
+    const client = mockJson({ code: 200 });
+    const http = new HttpClient({
+      fetch: client.fetchImpl,
+      headers: { "X-Test": "1" },
+    });
+
+    await http.get({ path: "/status/20" });
+
+    const headers = new Headers(client.inits[0]?.headers);
+    // The API answers 401 to requests that do not identify themselves.
+    expect(headers.get("user-agent")).toBe(environmentUserAgent());
+    expect(headers.get("user-agent")).toMatch(/^Node\.js\/\d+\./);
+    expect(headers.get("x-test")).toBe("1");
+  });
+
+  it("does not override a User-Agent the caller supplied", async () => {
     const client = mockJson({ code: 200 });
     const http = new HttpClient({
       fetch: client.fetchImpl,
@@ -113,8 +130,33 @@ describe("HttpClient", () => {
 
     await http.get({ path: "/status/20" });
 
-    const headers = new Headers(client.inits[0]?.headers);
-    expect(headers.get("user-agent")).toBe("MyBot/1.0 (+https://example.com)");
+    expect(new Headers(client.inits[0]?.headers).get("user-agent")).toBe(
+      "MyBot/1.0 (+https://example.com)"
+    );
+  });
+
+  it("recognises a caller's User-Agent whatever its casing", async () => {
+    const client = mockJson({ code: 200 });
+    const http = new HttpClient({
+      fetch: client.fetchImpl,
+      headers: { "user-agent": "MyBot/1.0" },
+    });
+
+    await http.get({ path: "/status/20" });
+
+    expect(new Headers(client.inits[0]?.headers).get("user-agent")).toBe(
+      "MyBot/1.0"
+    );
+  });
+
+  it("leaves the caller's headers object untouched", async () => {
+    const client = mockJson({ code: 200 });
+    const headers = { "X-Test": "1" };
+    const http = new HttpClient({ fetch: client.fetchImpl, headers });
+
+    await http.get({ path: "/status/20" });
+
+    expect(headers).toEqual({ "X-Test": "1" });
   });
 
   it("reports the API's User-Agent requirement, which uses an `error` body", async () => {

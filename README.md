@@ -44,14 +44,18 @@ import { FxTwitterV1, type Tweet, type User } from "fxtwitter";
 | `fetch` | `typeof fetch` | global `fetch` | Custom fetch implementation |
 
 > The API requires a `User-Agent` identifying the caller and answers `401`
-> without one. Most runtimes send it automatically; on those that don't, or to
-> identify your app, set it yourself:
+> without one. When you don't set one, a header describing the current runtime
+> is sent — `Node.js/22.16.0`, `Bun/1.3.0`, `Cloudflare-Workers` and so on.
+> Set your own to identify your app instead:
 >
 > ```ts
 > new FxTwitterV1({
 >   headers: { "User-Agent": "MyApp/1.0 (+https://example.com)" },
 > });
 > ```
+>
+> Nothing is sent in browsers, where `User-Agent` is a forbidden header and the
+> browser supplies its own.
 
 ### `getStatus(id, options?)`
 

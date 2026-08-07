@@ -1,8 +1,12 @@
+import { emitDeprecationWarning } from "./deprecation";
 import { FxTwitterError } from "./errors";
 import { type ClientOptions, HttpClient } from "./http";
 import type { StatusResponse, UserResponse } from "./types/v1";
 
-export type FxTwitterV1Options = ClientOptions;
+export type FxTwitterV1Options = ClientOptions & {
+  /** Suppresses the one-time deprecation warning emitted on construction. */
+  silenceDeprecationWarning?: boolean;
+};
 
 export interface GetStatusOptions {
   /**
@@ -35,11 +39,24 @@ const STATUS_ID_PATTERN = /^\d{2,20}$/;
  */
 const HANDLE_PATTERN = /^\w{1,15}$/;
 
-/** Client for the FxTwitter v1 API. */
+const DEPRECATION_MESSAGE =
+  "FxTwitterV1 targets the legacy FxTwitter v1 API, which is kept only for " +
+  "backwards compatibility and does not receive new features. Use " +
+  'FxTwitterV2 (import from "fxtwitter/v2") instead.';
+
+/**
+ * Client for the legacy FxTwitter v1 API.
+ *
+ * @deprecated Use {@link import("./v2").FxTwitterV2} instead. v1 is kept only
+ * for backwards compatibility and does not receive new features.
+ */
 export class FxTwitterV1 {
   private readonly http: HttpClient;
 
   constructor(options: FxTwitterV1Options = {}) {
+    if (!options.silenceDeprecationWarning) {
+      emitDeprecationWarning("FXTWITTER_V1_DEPRECATED", DEPRECATION_MESSAGE);
+    }
     this.http = new HttpClient(options);
   }
 

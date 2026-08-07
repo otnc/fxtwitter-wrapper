@@ -16,30 +16,37 @@ npm install fxtwitter
 ## Usage
 
 ```ts
-import { FxTwitterV1 } from "fxtwitter";
+import { FxTwitterV2 } from "fxtwitter/v2";
 
-const fx = new FxTwitterV1();
+const fx = new FxTwitterV2();
 
-const { tweet } = await fx.getStatus("20");
-const { user } = await fx.getUser("jack");
+const { status } = await fx.getStatus("20");
+const { user } = await fx.getProfile("X");
+const { results } = await fx.search("puppies");
 ```
 
-Types can be imported alongside the client:
+Each version ships under its own subpath, where its types are exported
+alongside the client:
 
 ```ts
-import { FxTwitterV1, type Tweet, type User } from "fxtwitter";
+import { FxTwitterV2, type TwitterStatus } from "fxtwitter/v2";
+import { FxTwitterV1, type Tweet } from "fxtwitter/v1";
 ```
 
-The client is also available from the `fxtwitter/v1` subpath, which will keep
-working unchanged as further API versions are added to the root:
+If you need both at once, `FxTwitter` bundles them. `v1` is only constructed —
+and so only warns — on first access:
 
 ```ts
-import { FxTwitterV1 } from "fxtwitter/v1";
+import { FxTwitter } from "fxtwitter";
+
+const fx = new FxTwitter({ v1: { silenceDeprecationWarning: true } });
+await fx.v2.getStatus("20");
+await fx.v1.getStatus("20");
 ```
 
-## API
+## Options
 
-### `new FxTwitterV1(options?)`
+Every client takes the same options:
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -50,13 +57,15 @@ import { FxTwitterV1 } from "fxtwitter/v1";
 | `retryDelay` | `number` | `0` | Delay between retries, in ms |
 | `fetch` | `typeof fetch` | global `fetch` | Custom fetch implementation |
 
+Every method takes an optional `signal` for per-call cancellation.
+
 > The API requires a `User-Agent` identifying the caller and answers `401`
 > without one. When you don't set one, a header describing the current runtime
 > is sent — `Node.js/22.16.0`, `Bun/1.3.0`, `Cloudflare-Workers` and so on.
 > Set your own to identify your app instead:
 >
 > ```ts
-> new FxTwitterV1({
+> new FxTwitterV2({
 >   headers: { "User-Agent": "MyApp/1.0 (+https://example.com)" },
 > });
 > ```
@@ -64,14 +73,69 @@ import { FxTwitterV1 } from "fxtwitter/v1";
 > Nothing is sent in browsers, where `User-Agent` is a forbidden header and the
 > browser supplies its own.
 
-### `getStatus(id, options?)`
+## v2
+
+### `new FxTwitterV2(options?)`
+
+| Method | Returns |
+| --- | --- |
+| `getStatus(id, options?)` | A single post |
+| `getThread(id, options?)` | A post with its unrolled thread |
+| `getConversation(id, options?)` | A post, its thread, and ranked replies |
+| `getStatusReposts(id, options?)` | Users who reposted a post |
+| `getStatusQuotes(id, options?)` | Posts quoting a post |
+| `getProfile(handle, options?)` | A user profile |
+| `getProfileStatuses(handle, options?)` | A user's posts |
+| `getProfileArticles(handle, options?)` | A user's long-form articles |
+| `getProfileMedia(handle, options?)` | A user's posts containing media |
+| `getProfileAbout(handle, options?)` | Account metadata |
+| `getProfileFollowers(handle, options?)` | A user's followers |
+| `getProfileFollowing(handle, options?)` | Accounts a user follows |
+| `search(query, options?)` | Post search results |
+| `typeahead(query, options?)` | Autocomplete suggestions |
+| `trends(options?)` | Trending topics |
+
+Common options: `count` and `cursor` paginate list endpoints, `lang` requests an
+inline translation, and `aboutAccount` adds `about_account` to an author.
+
+```ts
+// Paginate
+let cursor: string | undefined;
+do {
+  const page = await fx.search("puppies", { feed: "top", count: 50, cursor });
+  cursor = page.cursor.bottom ?? undefined;
+} while (cursor);
+
+// Look a profile up by numeric ID
+import { byUserId } from "fxtwitter/v2";
+await fx.getProfile(byUserId("783214"));
+```
+
+The list endpoints report "no results" as a `404` carrying an otherwise normal
+body. An empty page is a result rather than an error, so it resolves with
+`results: []`. The API uses that same `404` for an unknown handle, which it does
+not distinguish from an empty timeline.
+
+`getProfileStatuses` resolves to `null` when `since` is set without a `cursor`
+and nothing is newer — the API's documented `204`. Every other method either
+resolves with a body or throws.
+
+## v1
+
+> **Deprecated.** v1 is kept only for backwards compatibility and does not
+> receive new features — use [v2](#v2) instead. Constructing `FxTwitterV1`
+> emits a one-time `DeprecationWarning` (so `--no-deprecation` and
+> `--throw-deprecation` apply); pass `silenceDeprecationWarning: true` to
+> suppress it. `FxTwitter`'s `v1` property only constructs the client, and so
+> only warns, on first access.
+
+### `new FxTwitterV1(options?)`
+
+#### `getStatus(id, options?)`
 
 Fetches a single status by its snowflake ID.
 
 ```ts
-const { tweet } = await fx.getStatus("20");
-
-// Translate the status
 const { tweet } = await fx.getStatus("20", { translateTo: "es" });
 tweet?.translation?.text;
 ```
@@ -80,12 +144,11 @@ tweet?.translation?.text;
 | --- | --- | --- |
 | `translateTo` | `string` | Target language — an ISO 639-1 code (`es`) or locale (`zh-cn`). Adds `translation` to the status |
 | `screenName` | `string` | Author handle, for a readable URL. The API resolves the status from `id` alone and never checks it |
-| `signal` | `AbortSignal` | Per-call cancellation |
 
 Resolves to `{ code, message, tweet }`. `tweet` is `null` when the status could
 not be retrieved.
 
-### `getUser(handle, options?)`
+#### `getUser(handle, options?)`
 
 Fetches a user profile by handle, without a leading `@`.
 
@@ -93,15 +156,19 @@ Fetches a user profile by handle, without a leading `@`.
 const { user } = await fx.getUser("jack");
 ```
 
-| Option | Type | Description |
-| --- | --- | --- |
-| `signal` | `AbortSignal` | Per-call cancellation |
-
 Resolves to `{ code, message, user, reason? }`. `user` is absent when the
 profile could not be retrieved, and `reason` is `"suspended"` for a suspended
 account.
 
-### Errors
+On success, `code` mirrors the HTTP status and `message` is one of `OK`,
+`PRIVATE_TWEET`, `NOT_FOUND`, `UPSTREAM_UNAVAILABLE` or `API_FAIL`.
+
+Malformed input is rejected before a request is sent, because v1 answers those
+cases with HTML or a redirect rather than JSON: a status ID must be 2-20 digits,
+and a handle passed to `getUser` must match `\w{1,15}`. A well-formed handle
+that does not exist is a normal `404`.
+
+## Errors
 
 HTTP 4xx/5xx, network failures, timeouts, invalid input, and non-JSON responses
 are thrown as `FxTwitterError`:
@@ -122,17 +189,9 @@ try {
 }
 ```
 
-On success, `code` mirrors the HTTP status and `message` is one of `OK`,
-`PRIVATE_TWEET`, `NOT_FOUND`, `UPSTREAM_UNAVAILABLE` or `API_FAIL`.
-
 For a network failure or a timeout there is no response, so `status`, `code`
 and `body` are all `undefined` and `message` is a generic description. The
 original error is still available as `cause`.
-
-Malformed input is rejected before a request is sent, because the API answers
-those cases with HTML or a redirect rather than JSON: a status ID must be 2-20
-digits, and a handle passed to `getUser` must match `\w{1,15}`. A well-formed
-handle that does not exist is a normal `404`.
 
 ## Requirements
 

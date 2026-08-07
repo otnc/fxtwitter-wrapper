@@ -4,6 +4,8 @@
 // Here, v1's types stay unqualified so existing imports keep working, and
 // later versions are namespaced — the versions share many type names
 // (`Photo`, `User`, `Poll`…) that would otherwise collide.
+//
+// FxTwitterV1 is deprecated in favor of FxTwitterV2; see its own docs.
 
 export { FxTwitter } from "./client";
 export type { FxTwitterOptions } from "./client";

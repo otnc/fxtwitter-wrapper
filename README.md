@@ -30,6 +30,13 @@ Types can be imported alongside the client:
 import { FxTwitterV1, type Tweet, type User } from "fxtwitter";
 ```
 
+The client is also available from the `fxtwitter/v1` subpath, which will keep
+working unchanged as further API versions are added to the root:
+
+```ts
+import { FxTwitterV1 } from "fxtwitter/v1";
+```
+
 ## API
 
 ### `new FxTwitterV1(options?)`
@@ -110,12 +117,17 @@ try {
     error.code; // 404
     error.message; // "NOT_FOUND"
     error.body; // parsed response body, when available
+    error.cause; // underlying error, when available
   }
 }
 ```
 
 On success, `code` mirrors the HTTP status and `message` is one of `OK`,
 `PRIVATE_TWEET`, `NOT_FOUND`, `UPSTREAM_UNAVAILABLE` or `API_FAIL`.
+
+For a network failure or a timeout there is no response, so `status`, `code`
+and `body` are all `undefined` and `message` is a generic description. The
+original error is still available as `cause`.
 
 Malformed input is rejected before a request is sent, because the API answers
 those cases with HTML or a redirect rather than JSON: a status ID must be 2-20

@@ -92,9 +92,10 @@ describe("HttpClient", () => {
     expect((error as FxTwitterError).status).toBe(200);
   });
 
-  it("wraps network failures in FxTwitterError", async () => {
+  it("wraps network failures in FxTwitterError, keeping the original as cause", async () => {
+    const networkError = new Error("boom");
     const fetchImpl = (async () => {
-      throw new Error("boom");
+      throw networkError;
     }) as unknown as typeof fetch;
     const http = new HttpClient({ fetch: fetchImpl, retry: false });
 
@@ -103,6 +104,15 @@ describe("HttpClient", () => {
       .catch((err: unknown) => err);
 
     expect(error).toBeInstanceOf(FxTwitterError);
+    const fxError = error as FxTwitterError;
+    // There is no HTTP response to read these from.
+    expect(fxError.status).toBeUndefined();
+    expect(fxError.code).toBeUndefined();
+    expect(fxError.body).toBeUndefined();
+    // ofetch wraps the original error in its own FetchError, which chains it
+    // as `cause` in turn — the original is still reachable, just one level in.
+    expect(fxError.cause).toBeInstanceOf(Error);
+    expect((fxError.cause as Error).cause).toBe(networkError);
   });
 
   it("fills in a runtime User-Agent and keeps custom headers", async () => {
@@ -175,7 +185,7 @@ describe("HttpClient", () => {
     expect((error as FxTwitterError).message).toContain("User-Agent");
   });
 
-  it("forwards an AbortSignal", async () => {
+  it("forwards an AbortSignal, keeping the original error as cause", async () => {
     const controller = new AbortController();
     controller.abort();
     const { fetchImpl } = mockJson({ code: 200 });
@@ -186,6 +196,7 @@ describe("HttpClient", () => {
       .catch((err: unknown) => err);
 
     expect(error).toBeInstanceOf(FxTwitterError);
+    expect((error as FxTwitterError).cause).toBeDefined();
   });
 
   it("retries retryable statuses when asked", async () => {

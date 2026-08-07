@@ -4,7 +4,10 @@ import { FxTwitterV2 } from "./v2";
 
 export type FxTwitterOptions = ClientOptions & {
   /** Overrides applied only to the v1 client. */
-  v1?: Pick<ClientOptions, "baseUrl">;
+  v1?: Pick<ClientOptions, "baseUrl"> & {
+    /** Suppresses the one-time deprecation warning emitted when `v1` is first accessed. */
+    silenceDeprecationWarning?: boolean;
+  };
   /** Overrides applied only to the v2 client. */
   v2?: Pick<ClientOptions, "baseUrl">;
 };
@@ -22,13 +25,32 @@ export type FxTwitterOptions = ClientOptions & {
  * ```
  */
 export class FxTwitter {
-  readonly v1: FxTwitterV1;
   readonly v2: FxTwitterV2;
+
+  private readonly v1Options: ClientOptions & {
+    silenceDeprecationWarning?: boolean;
+  };
+  private v1Client?: FxTwitterV1;
 
   constructor(options: FxTwitterOptions = {}) {
     const { v1, v2, ...shared } = options;
 
-    this.v1 = new FxTwitterV1({ ...shared, baseUrl: v1?.baseUrl });
     this.v2 = new FxTwitterV2({ ...shared, baseUrl: v2?.baseUrl });
+    this.v1Options = {
+      ...shared,
+      baseUrl: v1?.baseUrl,
+      silenceDeprecationWarning: v1?.silenceDeprecationWarning,
+    };
+  }
+
+  /**
+   * The legacy v1 client, constructed on first access so its deprecation
+   * warning is only emitted if you actually use it.
+   *
+   * @deprecated Use {@link FxTwitter.v2} instead.
+   */
+  get v1(): FxTwitterV1 {
+    this.v1Client ??= new FxTwitterV1(this.v1Options);
+    return this.v1Client;
   }
 }

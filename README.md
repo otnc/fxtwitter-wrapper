@@ -33,12 +33,13 @@ import { FxTwitterV2, type TwitterStatus } from "fxtwitter/v2";
 import { FxTwitterV1, type Tweet } from "fxtwitter/v1";
 ```
 
-If you need both at once, `FxTwitter` bundles them:
+If you need both at once, `FxTwitter` bundles them. `v1` is only constructed —
+and so only warns — on first access:
 
 ```ts
 import { FxTwitter } from "fxtwitter";
 
-const fx = new FxTwitter();
+const fx = new FxTwitter({ v1: { silenceDeprecationWarning: true } });
 await fx.v2.getStatus("20");
 await fx.v1.getStatus("20");
 ```
@@ -120,6 +121,13 @@ and nothing is newer — the API's documented `204`. Every other method either
 resolves with a body or throws.
 
 ## v1
+
+> **Deprecated.** v1 is kept only for backwards compatibility and does not
+> receive new features — use [v2](#v2) instead. Constructing `FxTwitterV1`
+> emits a one-time `DeprecationWarning` (so `--no-deprecation` and
+> `--throw-deprecation` apply); pass `silenceDeprecationWarning: true` to
+> suppress it. `FxTwitter`'s `v1` property only constructs the client, and so
+> only warns, on first access.
 
 ### `new FxTwitterV1(options?)`
 

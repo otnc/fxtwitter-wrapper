@@ -1,12 +1,19 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { resetDeprecationWarnings } from "./deprecation";
 import { FxTwitterError } from "./errors";
 import { mockFetch, mockJson } from "./test-utils";
 import { FxTwitterV1 } from "./v1";
 
+const silent = { silenceDeprecationWarning: true } as const;
+
 describe("FxTwitterV1", () => {
+  beforeEach(() => {
+    resetDeprecationWarnings();
+  });
+
   it("requests /status/:id when no screen name or translation is given", async () => {
     const client = mockJson({ code: 200, message: "OK", tweet: { id: "20" } });
-    const v1 = new FxTwitterV1({ fetch: client.fetchImpl });
+    const v1 = new FxTwitterV1({ fetch: client.fetchImpl, ...silent });
 
     const result = await v1.getStatus("20");
 
@@ -16,7 +23,7 @@ describe("FxTwitterV1", () => {
 
   it("includes the screen name and translation segments when given", async () => {
     const client = mockJson({ code: 200, message: "OK", tweet: null });
-    const v1 = new FxTwitterV1({ fetch: client.fetchImpl });
+    const v1 = new FxTwitterV1({ fetch: client.fetchImpl, ...silent });
 
     await v1.getStatus("1548602399862013953", {
       screenName: "dangeredwolf",
@@ -34,7 +41,7 @@ describe("FxTwitterV1", () => {
       message: "OK",
       user: { screen_name: "jack", tweets: 30859 },
     });
-    const v1 = new FxTwitterV1({ fetch: client.fetchImpl });
+    const v1 = new FxTwitterV1({ fetch: client.fetchImpl, ...silent });
 
     const result = await v1.getUser("jack");
 
@@ -47,6 +54,7 @@ describe("FxTwitterV1", () => {
     const v1 = new FxTwitterV1({
       fetch: client.fetchImpl,
       baseUrl: "https://self-hosted.example.com",
+      ...silent,
     });
 
     await v1.getStatus("20");
@@ -59,7 +67,7 @@ describe("FxTwitterV1", () => {
       status: 404,
       body: { code: 404, message: "NOT_FOUND", tweet: null },
     });
-    const v1 = new FxTwitterV1({ fetch: fetchImpl, retry: false });
+    const v1 = new FxTwitterV1({ fetch: fetchImpl, retry: false, ...silent });
 
     const error = await v1.getStatus("20").catch((err: unknown) => err);
 
@@ -73,12 +81,47 @@ describe("FxTwitterV1", () => {
       status: 401,
       body: { error: "You must identify yourself with a User-Agent header" },
     });
-    const v1 = new FxTwitterV1({ fetch: fetchImpl, retry: false });
+    const v1 = new FxTwitterV1({ fetch: fetchImpl, retry: false, ...silent });
 
     const error = await v1.getUser("jack").catch((err: unknown) => err);
 
     expect((error as FxTwitterError).message).toContain("User-Agent");
     expect((error as FxTwitterError).status).toBe(401);
+  });
+
+  describe("deprecation warning", () => {
+    it("emits one, once per process", () => {
+      const emitWarning = vi
+        .spyOn(process, "emitWarning")
+        .mockImplementation(() => undefined);
+      const { fetchImpl } = mockJson({ code: 200 });
+
+      new FxTwitterV1({ fetch: fetchImpl });
+      new FxTwitterV1({ fetch: fetchImpl });
+
+      expect(emitWarning).toHaveBeenCalledTimes(1);
+      expect(emitWarning).toHaveBeenCalledWith(
+        expect.stringContaining("legacy FxTwitter v1 API"),
+        expect.objectContaining({
+          type: "DeprecationWarning",
+          code: "FXTWITTER_V1_DEPRECATED",
+        })
+      );
+
+      emitWarning.mockRestore();
+    });
+
+    it("can be silenced", () => {
+      const emitWarning = vi
+        .spyOn(process, "emitWarning")
+        .mockImplementation(() => undefined);
+      const { fetchImpl } = mockJson({ code: 200 });
+
+      new FxTwitterV1({ fetch: fetchImpl, ...silent });
+
+      expect(emitWarning).not.toHaveBeenCalled();
+      emitWarning.mockRestore();
+    });
   });
 
   describe("input validation", () => {
@@ -88,7 +131,7 @@ describe("FxTwitterV1", () => {
       "rejects invalid status ID %j without making a request",
       async (id) => {
         const client = mockJson({ code: 200 });
-        const v1 = new FxTwitterV1({ fetch: client.fetchImpl });
+        const v1 = new FxTwitterV1({ fetch: client.fetchImpl, ...silent });
 
         await expect(v1.getStatus(id)).rejects.toBeInstanceOf(FxTwitterError);
         expect(client.calls).toHaveLength(0);
@@ -99,7 +142,7 @@ describe("FxTwitterV1", () => {
       "rejects invalid handle %j without making a request",
       async (handle) => {
         const client = mockJson({ code: 200 });
-        const v1 = new FxTwitterV1({ fetch: client.fetchImpl });
+        const v1 = new FxTwitterV1({ fetch: client.fetchImpl, ...silent });
 
         await expect(v1.getUser(handle)).rejects.toBeInstanceOf(FxTwitterError);
         expect(client.calls).toHaveLength(0);
@@ -108,7 +151,7 @@ describe("FxTwitterV1", () => {
 
     it("rejects an empty screenName, which would break the path shape", async () => {
       const client = mockJson({ code: 200 });
-      const v1 = new FxTwitterV1({ fetch: client.fetchImpl });
+      const v1 = new FxTwitterV1({ fetch: client.fetchImpl, ...silent });
 
       await expect(
         v1.getStatus("20", { screenName: "  " })
@@ -118,7 +161,7 @@ describe("FxTwitterV1", () => {
 
     it("accepts any non-empty screenName, since the API ignores it", async () => {
       const client = mockJson({ code: 200, message: "OK", tweet: null });
-      const v1 = new FxTwitterV1({ fetch: client.fetchImpl });
+      const v1 = new FxTwitterV1({ fetch: client.fetchImpl, ...silent });
 
       await v1.getStatus("20", { screenName: "way_too_long_handle" });
 
@@ -129,7 +172,7 @@ describe("FxTwitterV1", () => {
 
     it("accepts handles at the 15-character limit", async () => {
       const client = mockJson({ code: 200, message: "OK", user: {} });
-      const v1 = new FxTwitterV1({ fetch: client.fetchImpl });
+      const v1 = new FxTwitterV1({ fetch: client.fetchImpl, ...silent });
 
       await v1.getUser("abcde1234567890");
 

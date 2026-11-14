@@ -73,7 +73,8 @@ describe("fxtwitter CLI", () => {
     getStatusV1.mockResolvedValue(body);
 
     const result = await run(
-      "--api-version=v1",
+      "--api",
+      "v1",
       "status",
       "https://x.com/jack/status/1234567890123456789?s=20",
       "--pretty"
@@ -92,7 +93,7 @@ describe("fxtwitter CLI", () => {
     "fetches a %s profile with the matching client",
     async (version, fetchProfile) => {
       fetchProfile.mockResolvedValue({ user: {} });
-      await run("profile", "jack", "--api-version", version);
+      await run("profile", "@jack", "--api", version);
 
       expect(fetchProfile).toHaveBeenCalledExactlyOnceWith("jack");
     }
@@ -121,7 +122,7 @@ describe("fxtwitter CLI", () => {
 
   it.each([
     {
-      args: ["search", "puppies", "--api-version=v1"],
+      args: ["search", "puppies", "--api", "v1"],
       message: "search requires API v2",
     },
     {
@@ -131,6 +132,22 @@ describe("fxtwitter CLI", () => {
     {
       args: ["status", "20", "--timeout=NaN"],
       message: "--timeout must be a non-negative integer",
+    },
+    {
+      args: ["status", "20", "--api", "v3"],
+      message: "Expected one of",
+    },
+    {
+      args: ["status", "20", "--prety"],
+      message: "Unknown option",
+    },
+    {
+      args: ["status", "20", "--base-url"],
+      message: "--base-url must be an absolute HTTP or HTTPS URL",
+    },
+    {
+      args: ["status", "20", "--retry-delay", "2147483648"],
+      message: "--retry-delay must be at most 2147483647",
     },
   ])(
     "rejects invalid input before making a request ($message)",
@@ -146,6 +163,20 @@ describe("fxtwitter CLI", () => {
       expect(search).not.toHaveBeenCalled();
     }
   );
+
+  it("shows command-specific help without fetching a post", async () => {
+    const result = await run("status", "-h");
+
+    expect(result.stdout).toHaveBeenCalledExactlyOnceWith(
+      expect.stringContaining("fxtwitter status")
+    );
+    expect(result.stdout).toHaveBeenCalledWith(
+      expect.stringContaining("--api <v1|v2>")
+    );
+    expect(result.stderr).not.toHaveBeenCalled();
+    expect(getStatusV2).not.toHaveBeenCalled();
+    expect(result.exitCode).toBeUndefined();
+  });
 
   it("reports a client error on stderr and exits with a nonzero status", async () => {
     getStatusV2.mockRejectedValue(new Error("NOT_FOUND"));

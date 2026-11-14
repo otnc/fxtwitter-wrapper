@@ -13,6 +13,27 @@ Typed wrapper for the [FxTwitter](https://github.com/FxEmbed/FxEmbed) API.
 npm install fxtwitter
 ```
 
+## CLI
+
+```sh
+npx fxtwitter status 20
+npx fxtwitter status "https://x.com/jack/status/20" --pretty
+npx fxtwitter profile @jack --api v1
+npx fxtwitter search "from:jack puppies" | jq '.results'
+```
+
+The CLI uses API v2 by default. Use `--api v1` with `status` or `profile`. Search is available in v2. Profile handles can include a leading `@`.
+
+Successful commands write compact JSON to stdout. Use `--pretty` to indent it. Errors go to stderr and exit with a nonzero status.
+
+| Option | Description |
+| ------ | ----------- |
+| `--base-url <url>` | Override the API base URL |
+| `--timeout <ms>` | Set the request timeout |
+| `--retry <count>` | Set the retry count (use `0` to disable retries) |
+| `--retry-delay <ms>` | Set the delay between retries |
+| `-h, --help` | Show commands and options. Use `fxtwitter status --help` for help with a specific command |
+
 ## Usage
 
 ```ts

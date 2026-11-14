@@ -1,13 +1,27 @@
 import { defineConfig } from "tsdown";
 
-export default defineConfig({
-  // "." plus the per-version subpath exports, so import paths stay stable as
-  // further API versions are added alongside them.
-  entry: ["src/index.ts", "src/v1.ts", "src/v2.ts"],
-  format: ["esm", "cjs"],
-  dts: true,
-  clean: true,
-  // Node >= 22 supports ES2024
-  target: "node22",
-  platform: "node",
-});
+export default defineConfig([
+  {
+    entry: ["src/index.ts", "src/v1.ts", "src/v2.ts"],
+    format: ["esm", "cjs"],
+    dts: true,
+    clean: true,
+    target: "node22",
+    platform: "node",
+  },
+  {
+    entry: ["src/cli.ts"],
+    deps: { alwaysBundle: ["citty"], onlyBundle: ["citty"] },
+    copy: [
+      { from: "node_modules/citty/LICENSE", rename: "LICENSE-citty" },
+      {
+        from: "node_modules/citty/dist/THIRD-PARTY-LICENSES.md",
+        rename: "THIRD-PARTY-LICENSES-citty.md",
+      },
+    ],
+    format: "esm",
+    dts: false,
+    target: "node22",
+    platform: "node",
+  },
+]);

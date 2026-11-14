@@ -20,6 +20,9 @@
   "license": "MIT",
   "author": "otoneko.",
   "type": "module",
+  "bin": {
+    "fxtwitter": "./dist/cli.mjs"
+  },
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
   "types": "dist/index.d.mts",
